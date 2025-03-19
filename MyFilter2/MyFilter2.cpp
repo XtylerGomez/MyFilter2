@@ -7,19 +7,70 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+
 using namespace std;
 using namespace cv;
+
+struct ColorCluster {
+	int H;
+	int S;
+	int V;
+	int mH;
+    int mS;
+	int mV;
+    float t;
+};
+
+ColorCluster Cl[7];
+
+
+void Segmentation(Mat& frame, Mat& frameOut) {
+    
+	frameOut = frame.clone();
+
+	cvtColor(frame, frame, cv::COLOR_BGR2HSV);
+
+	unsigned char* ptr = (unsigned char*)frame.ptr();
+    unsigned char* ptrOut = (unsigned char*)frameOut.ptr();
+
+    for (int j = 0;j < frame.rows;j++) {
+        for (int i = 0; i < frame.cols;i++) {
+
+            int pix=(j*frame.cols*3)+3*i;
+			int H = ptr[pix];
+			int S = ptr[pix + 1];
+			int V = ptr[pix + 2];
+			//int I = (H + S + V) / 3;
+            if (H > 120 && H<180) {
+                ptrOut[pix] = 0; //Blue
+                ptrOut[pix + 1] = 0; //Green
+                ptrOut[pix + 2] = 255; //Red
+            }
+            else {
+                ptrOut[pix] = V; //Blue
+                ptrOut[pix + 1] = V; //Green
+                ptrOut[pix + 2] = V; //Red
+            }
+            
+        }
+           
+    }
+    return;
+}
+
 int process(VideoCapture& capture) {
     string window_name = "Wachando";
     
     namedWindow(window_name, WINDOW_KEEPRATIO);
-    Mat frame;
+    Mat frame, result;
     Mat BG_Img;
     for (;;) {
         capture >> frame;
         if (frame.empty())
             break;
-        imshow(window_name, frame);
+
+		Segmentation(frame, result);
+        imshow(window_name, result);
         char key = (char)waitKey(30);
 
         switch (key) {
